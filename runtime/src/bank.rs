@@ -3496,8 +3496,7 @@ impl Bank {
         hash_queue: &BlockhashQueue,
         error_counters: &mut TransactionErrorMetrics,
     ) -> TransactionCheckResult {
-        let recent_blockhash = tx.message().recent_blockhash();
-        if let Some(hash_info) = hash_queue.get_hash_info_if_valid(recent_blockhash, max_age) {
+        if let Some(hash_info) = hash_queue.get_hash_info_if_tx_valid(tx, max_age) {
             Ok(CheckedTransactionDetails {
                 nonce: None,
                 lamports_per_signature: hash_info.lamports_per_signature(),

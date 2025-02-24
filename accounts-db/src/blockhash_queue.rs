@@ -1,5 +1,7 @@
+use log::debug;
 #[allow(deprecated)]
 use solana_sdk::sysvar::recent_blockhashes;
+use solana_sdk::transaction::SanitizedTransaction;
 use {
     serde::{Deserialize, Serialize},
     solana_sdk::{
@@ -87,6 +89,24 @@ impl BlockhashQueue {
         })
     }
 
+    pub fn get_hash_info_if_tx_valid(&self, tx: &SanitizedTransaction, max_age: usize) -> Option<&HashInfo> {
+        let maybe_info = self.hashes.get(tx.message().recent_blockhash());
+
+        let result = maybe_info.filter(|info| {
+            let result = self.last_hash_index - info.hash_index <= max_age as u64;
+            debug!(
+                "is_hash_index_valid tx: {:?} last_hash_index: {} max_age: {} hash_index: {} result: {}",
+                tx, self.last_hash_index, max_age, info.hash_index, result
+            );
+            result
+        });
+
+        if maybe_info.is_none() {
+            debug!("get_hash_info_if_valid tx: {:?} hashes {:?}", tx, self.hashes);
+        }
+        result
+    }
+
     pub fn get_hash_age(&self, hash: &Hash) -> Option<u64> {
         self.hashes
             .get(hash)
@@ -111,6 +131,7 @@ impl BlockhashQueue {
     }
 
     pub fn register_hash(&mut self, hash: &Hash, lamports_per_signature: u64) {
+        debug!("register_hash before {} hashes {:?}", hash, self.hashes);
         self.last_hash_index += 1;
         if self.hashes.len() >= self.max_age {
             self.hashes.retain(|_, info| {
@@ -128,6 +149,7 @@ impl BlockhashQueue {
         );
 
         self.last_hash = Some(*hash);
+        debug!("register_hash after {} hashes {:?}", hash, self.hashes);
     }
 
     #[deprecated(

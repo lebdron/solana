@@ -703,8 +703,8 @@ impl SendTransactionService {
             let wire_transactions = transactions
                 .iter()
                 .filter(|(signature, _)| batched_transactions.contains(signature))
-                .map(|(_, transaction_info)| transaction_info.wire_transaction.as_ref())
-                .collect::<Vec<&[u8]>>();
+                .map(|(_, transaction_info)| (transaction_info.wire_transaction.as_ref(), transaction_info.signature.as_ref()))
+                .collect::<Vec<(&[u8], &[u8])>>();
 
             let iter = wire_transactions.chunks(config.batch_size);
             for chunk in iter {
@@ -723,8 +723,16 @@ impl SendTransactionService {
                 );
                 addresses.extend(leader_addresses);
 
+                for (_, signature) in chunk {
+                    debug!(
+                        "Sending transacation (retry) {} to address: {:?}",
+                        Signature::try_from(*signature).unwrap(), addresses,
+                    );
+                }
+
+                let wire_chunk = chunk.iter().map(|(wire_transaction, _)| *wire_transaction).collect::<Vec<&[u8]>>();
                 for address in &addresses {
-                    Self::send_transactions(address, chunk, connection_cache, stats);
+                    Self::send_transactions(address, &wire_chunk, connection_cache, stats);
                 }
             }
         }
