@@ -376,7 +376,7 @@ impl JsonRpcService {
         let tpu_address = cluster_info
             .my_contact_info()
             .tpu(connection_cache.protocol())
-            .map_err(|err| format!("{err}"))?;
+            .unwrap_or(solana_gossip::contact_info::SOCKET_ADDR_UNSPECIFIED);
 
         // sadly, some parts of our current rpc implemention block the jsonrpc's
         // _socket-listening_ event loop for too long, due to (blocking) long IO or intesive CPU,

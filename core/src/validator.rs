@@ -970,7 +970,7 @@ impl Validator {
                         &identity_keypair,
                         node.info
                             .tpu(Protocol::UDP)
-                            .map_err(|err| format!("Invalid TPU address: {err:?}"))?
+                            .unwrap_or(solana_gossip::contact_info::SOCKET_ADDR_UNSPECIFIED)
                             .ip(),
                     )),
                     Some((&staked_nodes, &identity_keypair.pubkey())),
